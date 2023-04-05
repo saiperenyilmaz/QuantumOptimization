@@ -1,0 +1,81 @@
+model JobShopSchedule
+
+declarations
+
+   N : integer      // number of jobs
+   M : integer      // number of machines
+   D : array(1..N, 1..M) of integer   // duration of each operation
+   C : array(1..N, 1..M) of integer   // machine for each operation
+   T : integer      // time limit for the solver
+
+   // decision variables
+   X : array(1..N, 1..M) of integer   // start time of each operation
+
+   // auxiliary variables
+   L : array(1..N, 1..M) of integer   // completion time of each operation
+   E : array(1..N) of integer        // end time of each job
+   F : array(1..N) of integer        // objective function value of each job
+
+end-declarations
+
+procedure solveJobShopSchedule()
+begin
+   // initialize variables
+   for i in 1..N do
+      for j in 1..M do
+         X[i,j] := 0
+
+   // set up constraints
+   forall i in 1..N do
+      forall j in 1..M-1 do
+         L[i,j] := X[i,j] + D[i,j]
+         X[i,j+1] >= L[i,j]
+      end-do
+      L[i,M] := X[i,M] + D[i,M]
+
+   forall j in 1..M do
+      forall i1 in 1..N do
+         forall i2 in i1+1..N do
+            if C[i1,j] = C[i2,j] then
+               X[i1,j] + D[i1,j] <= X[i2,j] or X[i2,j] + D[i2,j] <= X[i1,j]
+            end-if
+         end-do
+      end-do
+   end-do
+
+   // set up objective function
+   forall i in 1..N do
+      E[i] := L[i,M]
+      F[i] := E[i]
+   end-do
+
+   // set up solver
+   minimize sum(i in 1..N) F[i] subject to
+      forall i in 1..N do
+         forall j in 1..M do
+            X[i,j] >= 0
+         end-do
+         E[i] <= T
+      end-do
+
+   // solve problem
+   setSolverParam("TimeLimit", T)
+   branchAndBound()
+
+   // print solution
+   writeln("Solution:")
+   for i in 1..N do
+      for j in 1..M do
+         writeln("Job ", i, ", Operation ", j, ": start time = ", X[i,j])
+      end-do
+   end-do
+end-procedure
+
+// example usage
+N := 3
+M := 3
+D := [|1, 2, 1|, |2, 1, 2|, |1, 2, 1|]
+C := [|1, 2, 3|, |2, 3, 1|, |3, 1, 2|]
+T := 100
+
+solveJobShopSchedule()

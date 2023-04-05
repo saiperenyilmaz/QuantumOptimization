@@ -44,4 +44,4 @@ forall (c in CATEGORIES, t in TIME_PERIODS)
   margin[c,t] >= target_margin[c] * sum(p in PRODUCTS where product_category[p] == c, s in STORES)
     cost[p,s] * stock[p,s,t];
 
-! End of the model.
+! End of the model..
