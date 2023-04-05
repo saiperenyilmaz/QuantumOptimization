@@ -1,0 +1,66 @@
+namespace JobShopScheduling {
+    open Microsoft.Quantum.Arrays;
+    open Microsoft.Quantum.Diagnostics;
+    open Microsoft.Quantum.Math;
+    open Microsoft.Quantum.Measurement;
+
+    operation ScheduleJobs(jobs: (Int, Int, Int)[]) : (Int, Int, Int)[] {
+        // The jobs array contains tuples of the form (job_id, machine_id, processing_time).
+        // The goal is to schedule all the jobs on the machines such that the total completion time is minimized.
+
+        // Sort the jobs in increasing order of processing time.
+        let sorted_jobs = Sort(jobs, (a, b) => a[2] > b[2]);
+
+        // Initialize the machine schedule.
+        let machine_schedule = new Int[4][];
+        for (i in 0 .. 3) {
+            set machine_schedule w/= i <- new Int[0];
+        }
+
+        // Schedule the jobs.
+        for (job in sorted_jobs) {
+            let job_id = job[0];
+            let machine_id = job[1];
+            let processing_time = job[2];
+
+            // Find the machine with the minimum completion time.
+            let min_machine = FindMinMachine(machine_schedule);
+
+            // Add the job to the machine's schedule.
+            let start_time = CalculateStartTime(min_machine, machine_schedule[min_machine], processing_time);
+            set machine_schedule w/= min_machine <- machine_schedule[min_machine] + [start_time + processing_time];
+
+            // Print the job schedule.
+            Message($"Scheduled job {job_id} on machine {min_machine} starting at time {start_time}.");
+        }
+
+        // Return the job schedule.
+        return sorted_jobs;
+    }
+
+    // Helper functions.
+
+    function FindMinMachine(machine_schedule : Int[][]) : Int {
+        mutable min_machine = 0;
+        mutable min_time = Infinity;
+        for (i in 0 .. Length(machine_schedule) - 1) {
+            let completion_time = Length(machine_schedule[i]) > 0 ? machine_schedule[i][Length(machine_schedule[i])-1] : 0;
+            if (completion_time < min_time) {
+                set min_machine = i;
+                set min_time = completion_time;
+            }
+        }
+        return min_machine;
+    }
+
+    function CalculateStartTime(machine_id: Int, machine_schedule: Int[], processing_time: Int) : Int {
+        let last_job_end_time = Length(machine_schedule) > 0 ? machine_schedule[Length(machine_schedule) - 1] : 0;
+        return Max(last_job_end_time, GetMachineIdleTime(machine_id, last_job_end_time)) + processing_time;
+    }
+
+    function GetMachineIdleTime(machine_id: Int, current_time: Int) : Int {
+        // This function returns the amount of idle time for a machine starting at the given time.
+        // For simplicity, we assume that the machines are always available.
+        return 0;
+    }
+}
