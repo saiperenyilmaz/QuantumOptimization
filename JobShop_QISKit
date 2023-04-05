@@ -1,0 +1,24 @@
+# Import necessary libraries
+from qiskit import Aer, BasicAer
+from qiskit.aqua.algorithms import QAOA
+from qiskit.aqua import QuantumInstance
+from qiskit.aqua.components.optimizers import COBYLA
+from qiskit.optimization.applications.ising import job_shop
+
+# Set up the problem
+jobs_data = [[(0, 1), (1, 2)], [(0, 2), (2, 1)], [(1, 2), (2, 3)]]
+num_jobs = len(jobs_data)
+num_machines = 3
+schedule_length = 7
+qubit_op, offset = job_shop.get_operator(jobs_data)
+
+# Set up the quantum algorithm
+optimizer = COBYLA()
+quantum_instance = QuantumInstance(BasicAer.get_backend('statevector_simulator'))
+
+qaoa = QAOA(qubit_op, optimizer, p=1)
+result = qaoa.run(quantum_instance)
+
+# Print the solution
+x = job_shop.get_solution(result['x'], num_machines, schedule_length)
+print("Solution: ", x)
