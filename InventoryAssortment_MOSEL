@@ -1,0 +1,47 @@
+sets
+  PRODUCTS          ! Set of all products
+  REGIONS           ! Set of all regions
+  STORES            ! Set of all stores
+  CATEGORIES        ! Set of all product categories
+  TIME_PERIODS      ! Set of all time periods
+
+parameters
+  demand{PRODUCTS,REGIONS,TIME_PERIODS}  ! Demand for each product, region, and time period
+  cost{PRODUCTS,STORES}                  ! Cost of stocking each product at each store
+  max_stock{PRODUCTS,STORES}             ! Maximum stock of each product at each store
+  min_stock{PRODUCTS,STORES}             ! Minimum stock of each product at each store
+  target_margin{CATEGORIES}              ! Target margin for each product category
+  sales_price{PRODUCTS}                  ! Sales price for each product
+  product_category{PRODUCTS}             ! Product category for each product
+  demand_price_elasticity{PRODUCTS}      ! Price elasticity of demand for each product
+
+variables
+  stock{PRODUCTS,STORES,TIME_PERIODS} ! Stock of each product at each store for each time period
+  revenue{REGIONS,TIME_PERIODS}        ! Revenue for each region and time period
+  margin{CATEGORIES,TIME_PERIODS}      ! Margin for each product category and time period
+
+! Objective: Maximize total profit
+maximize
+  sum((r,t) in REGIONS cross TIME_PERIODS, s in STORES, p in PRODUCTS)
+    revenue[r,t] * (1 - demand_price_elasticity[p] * (sales_price[p] - cost[p,s]) / sales_price[p]) * stock[p,s,t]
+  - sum((s,p) in PRODUCTS cross STORES, t in TIME_PERIODS)
+    cost[p,s] * stock[p,s,t];
+
+! Constraints:
+
+! Demand constraints: Stock cannot be negative and cannot exceed the maximum stock
+forall (p in PRODUCTS, s in STORES, t in TIME_PERIODS)
+  min_stock[p,s] <= stock[p,s,t] <= max_stock[p,s];
+
+! Revenue and margin constraints
+forall (r in REGIONS, t in TIME_PERIODS)
+  revenue[r,t] = sum(p in PRODUCTS, s in STORES)
+    demand[p,r,t] * sales_price[p] * stock[p,s,t];
+forall (c in CATEGORIES, t in TIME_PERIODS)
+  margin[c,t] = sum(p in PRODUCTS where product_category[p] == c, s in STORES)
+    (sales_price[p] - cost[p,s]) * stock[p,s,t];
+forall (c in CATEGORIES, t in TIME_PERIODS)
+  margin[c,t] >= target_margin[c] * sum(p in PRODUCTS where product_category[p] == c, s in STORES)
+    cost[p,s] * stock[p,s,t];
+
+! End of the model.
